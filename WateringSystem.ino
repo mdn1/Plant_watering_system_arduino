@@ -1,28 +1,34 @@
 //Defines
-#define LED_BLINK_RATE 1000
-#define CLOCK_COUNT_STEPS 1000
+#define LOGGING_INTERVAL 600000 //10min
+#define LED_BLINK_INTERVAL 1000
+#define CLOCK_COUNT_INTERVAL 1000
 #define lmillis() ((long)millis())
 
 //HW Const
 const int humiditySensor0 = A0;
 const int pump0 = 2;
 const int waterButton = 3;
-const int led = 13;
+const int statusLed = 13;
+
+//Sensor values
+int rawSoilHumidity0 = 0;
+int rawAirHumidity0 = 0;
+int rawAirTemp0 = 0;
+int watering0ElapsedTime = 0; //seconds
 
 //Variables
-int rawHumiditySensor0 = 0;
 int waterButtonState = LOW;
 int lastWaterButtonState = LOW;
 int pumpState = HIGH;
-
-
 
 // the following variables are unsigned longs because the time, measured in
 // milliseconds, will quickly become a bigger number than can be stored in an int.
 unsigned long lastDebounceTime = 0;  // the last time the output pin was toggled
 unsigned long debounceDelay = 50;    // the debounce time; increase if the output flickers
-long lastTimeCheckLed;
-long lastTimeCheckClock;
+long lastTimeCheckedStatusLed;
+long lastTimeCheckedClock;
+long lastTimeCheckedLogger;
+
 int seconds = 0;
 int minutes = 0;
 int hours = 0;
@@ -34,19 +40,21 @@ int days = 0;
 //------------------------------------------------------------------------
 void setup () {
 
-  lastTimeCheckLed = lmillis() + LED_BLINK_RATE;
-  lastTimeCheckClock = lmillis() + CLOCK_COUNT_STEPS;
+  lastTimeCheckedStatusLed = lmillis() + LED_BLINK_INTERVAL;
+  lastTimeCheckedClock = lmillis() + CLOCK_COUNT_INTERVAL;
+  lastTimeCheckedLogger = lmillis() + LOGGING_INTERVAL;
 
+  //Set initial I/O state
   pinMode(pump0, OUTPUT);
-  pinMode(led, OUTPUT);
-
+  pinMode(statusLed, OUTPUT);
   pinMode(waterButton, INPUT);
 
+  //Serial port
   Serial.begin(9600);
 
-  //Set initial pump and LED state
+  //Set initial HW state
   digitalWrite(pump0, HIGH);
-  digitalWrite(led, LOW);
+  digitalWrite(statusLed, LOW);
 }
 
 
@@ -57,11 +65,11 @@ void setup () {
 
 void loop() {
 
-  rawHumiditySensor0 = analogRead(humiditySensor0);
+  rawSoilHumidity0 = analogRead(humiditySensor0);
 
   CheckWaterButtonPressed();
   CheckTimerLed();
-  CheckClock();  
+  UpdateClock();  
 }
 
 
@@ -105,24 +113,18 @@ void CheckWaterButtonPressed(){
 
 
 void CheckTimerLed (){
-  if (lmillis() - lastTimeCheckLed >= 0) {
-
-    lastTimeCheckLed = lmillis() + LED_BLINK_RATE;
-
-    Serial.println(rawHumiditySensor0);
-    Serial.println(waterButtonState);
-    Serial.println();
-
-    digitalWrite(led, !digitalRead(led));
+  if (lmillis() - lastTimeCheckedStatusLed >= 0) {
+    lastTimeCheckedStatusLed = lmillis() + LED_BLINK_INTERVAL;
+    digitalWrite(statusLed, !digitalRead(statusLed));
 
   }  
 }
 
 
-void CheckClock(){
-  if (lmillis() - lastTimeCheckClock >= 0) {
+void UpdateClock(){
+  if (lmillis() - lastTimeCheckedClock >= 0) {
 
-    lastTimeCheckClock = lmillis() + CLOCK_COUNT_STEPS;
+    lastTimeCheckedClock = lmillis() + CLOCK_COUNT_INTERVAL;
     seconds++;
 
     if(seconds == 60){
@@ -137,12 +139,23 @@ void CheckClock(){
       hours = 0;
       days++;
     }
-    
-    Serial.print(String(days) + "D ");
-    Serial.print(String(hours) + ":");
-    Serial.print(String(minutes) + ":");
-    Serial.println(String(seconds));
-    
   }   
+}
+
+
+void LogData(){
+  Serial.print(String(days) + "D");
+  Serial.print(String(hours) + ":");
+  Serial.print(String(minutes) + ":");
+  Serial.print(String(seconds));
+  Serial.print(",");
+  Serial.print(String(rawSoilHumidity0));
+  Serial.print(",");
+  Serial.print(String(rawAirHumidity0));
+  Serial.print(",");
+  Serial.print(String(rawAirTemp0));
+  Serial.print(",");
+  Serial.print(String(watering0ElapsedTime));    
+  Serial.print(",");
 }
 
