@@ -1,5 +1,5 @@
 //Defines
-#define LOGGING_INTERVAL 5000 //10min
+#define LOGGING_INTERVAL 10000 //10min
 #define LED_BLINK_INTERVAL 1000
 #define CLOCK_COUNT_INTERVAL 1000
 #define lmillis() ((long)millis())
@@ -15,6 +15,7 @@ int rawSoilHumidity0 = 0;
 int rawAirHumidity0 = 0;
 int rawAirTemp0 = 0;
 long watering0ElapsedTime = 0; //seconds
+long watering0ElapsedTimeInterval = 0; //seconds
 
 //Variables
 int waterButtonState = LOW;
@@ -69,7 +70,8 @@ void loop() {
 
   CheckWaterButtonPressed();
   CheckTimerLed();
-  UpdateClock();  
+  UpdateClock();
+  CheckTimerLogData();
 }
 
 
@@ -100,13 +102,14 @@ void CheckWaterButtonPressed(){
       waterButtonState = reading;
 
       pumpState = !pumpState;
-
+  
+      //If button pressed start timer
       if(waterButtonState == HIGH){
-        watering0ElapsedTime = lmillis();
+        watering0ElapsedTimeInterval = lmillis();
       } 
       else {
-        watering0ElapsedTime = lmillis() - watering0ElapsedTime;
-        LogData();
+        watering0ElapsedTimeInterval = lmillis() - watering0ElapsedTimeInterval;
+        watering0ElapsedTime += watering0ElapsedTimeInterval;
       }
     }
   }
@@ -150,13 +153,15 @@ void UpdateClock(){
   }   
 }
 
+
 void CheckTimerLogData(){
-  if (lmillis() - lastTimeCheckedLogger >= 0) {
+  if (lmillis() - lastTimeCheckedLogger >= 0 && waterButtonState == LOW) {
 
     lastTimeCheckedLogger = lmillis() + LOGGING_INTERVAL;
     LogData();
   }
 }
+
 
 void LogData(){
 
@@ -171,7 +176,8 @@ void LogData(){
   Serial.print(",");
   Serial.print(String(rawAirTemp0));
   Serial.print(",");
-  Serial.println(String(watering0ElapsedTime));
+  Serial.println(String(watering0ElapsedTime/1000));
+  watering0ElapsedTime = 0;
 
 }
 
