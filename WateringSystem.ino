@@ -7,6 +7,10 @@
 //Defines
 #define DHTPIN 4          //Air Temp/Humidity Sensor port
 #define DHTTYPE DHT11     //Air Temp/Humidity Sensor type
+#define HUMIDITY_SENSOR_0  A0
+#define PUMP_0 2
+#define WATER_BUTTON 3
+#define STATUS_LED 13
 #define COUNTER_1SEC 1000
 #define COUNTER_10MIN 10000 //10min
 #define lmillis() ((long)millis())
@@ -15,12 +19,6 @@
 //------------------------------------------------------------------------
 //    Variables and consts
 //------------------------------------------------------------------------
-//HW Const
-const int humiditySensor0 = A0;
-const int pump0 = 2;
-const int waterButton = 3;
-const int statusLed = 13;
-
 //Sensor values
 int rawSoilHumidity0 = 0;
 float rawAirHumidity0 = 0;
@@ -58,16 +56,16 @@ void setup () {
   lastTimeCheckedLogger = lmillis() + COUNTER_10MIN;
 
   //Set initial I/O state
-  pinMode(pump0, OUTPUT);
-  pinMode(statusLed, OUTPUT);
-  pinMode(waterButton, INPUT);
+  pinMode(PUMP_0, OUTPUT);
+  pinMode(STATUS_LED, OUTPUT);
+  pinMode(WATER_BUTTON, INPUT);
 
   //Serial port
   Serial.begin(9600);
 
   //Set initial HW state
-  digitalWrite(pump0, HIGH);
-  digitalWrite(statusLed, LOW);
+  digitalWrite(PUMP_0, HIGH);
+  digitalWrite(STATUS_LED, LOW);
   dht.begin();
 
 }
@@ -83,7 +81,6 @@ void loop() {
   CheckWaterButtonPressed();
   Timer_1Sec();
   Timer_10Min();
-  UpdateClock();
 }
 
 
@@ -93,7 +90,7 @@ void loop() {
 //------------------------------------------------------------------------
 void CheckWaterButtonPressed() {
   // read the state of the switch into a local variable:
-  int reading = digitalRead(waterButton);
+  int reading = digitalRead(WATER_BUTTON);
 
   // check to see if you just pressed the button
   // (i.e. the input went from LOW to HIGH), and you've waited long enough
@@ -128,7 +125,7 @@ void CheckWaterButtonPressed() {
 
 
   // set the pump:
-  digitalWrite(pump0, pumpState);
+  digitalWrite(PUMP_0, pumpState);
 
   // save the reading. Next time through the loop, it'll be the lastButtonState:
   lastWaterButtonState = reading;
@@ -160,7 +157,8 @@ void UpdateClock() {
 void Timer_1Sec () {
   if (lmillis() - lastTimeCheckedStatusLed >= 0) {
     lastTimeCheckedStatusLed = lmillis() + COUNTER_1SEC;
-    digitalWrite(statusLed, !digitalRead(statusLed));
+    digitalWrite(STATUS_LED, !digitalRead(STATUS_LED));
+    UpdateClock();
   }
 }
 
@@ -170,7 +168,7 @@ void Timer_10Min() {
     lastTimeCheckedLogger = lmillis() + COUNTER_10MIN;
 
     //Collect sensor information
-    rawSoilHumidity0 = analogRead(humiditySensor0);
+    rawSoilHumidity0 = analogRead(HUMIDITY_SENSOR_0);
     rawAirHumidity0 = dht.readHumidity();
     rawAirTemp0 = dht.readTemperature();
 
