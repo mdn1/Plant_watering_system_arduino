@@ -1,18 +1,36 @@
+#define LED_BLINK_RATE 1000
+#define lmillis() ((long)millis())
+
 //HW Const
 const int humiditySensor0 = A0;
 const int pump0 = 2;
 const int waterButton = 3;
+const int led = 13;
 
 //Variables
 int rawHumiditySensor0 = 0;
 int waterButtonState = 0;
 
+long lastTimeCheck;
+
+
 void setup () {
   
+  lastTimeCheck = lmillis() + LED_BLINK_RATE;
+
   pinMode(pump0, OUTPUT);
+  pinMode(led, OUTPUT);
+  
   pinMode(waterButton, INPUT);
+  
   Serial.begin(9600);
+  
+  //Set initial pump and LED state
+  digitalWrite(pump0, HIGH);
+  digitalWrite(led, LOW);
 }
+
+
 
 void loop() {
   
@@ -34,10 +52,23 @@ void loop() {
 
   }
   
-  delay(50);
+  CheckTimerLed();
   
-  Serial.println(rawHumiditySensor0);
-  Serial.println(waterButtonState);
-  Serial.println();
   
+}
+
+
+
+void CheckTimerLed (){
+  if (lmillis() - lastTimeCheck >= 0) {
+
+        lastTimeCheck = lmillis() + LED_BLINK_RATE;
+
+        Serial.println(rawHumiditySensor0);
+        Serial.println(waterButtonState);
+        Serial.println();
+        
+        digitalWrite(led, !digitalRead(led));
+
+    }  
 }
