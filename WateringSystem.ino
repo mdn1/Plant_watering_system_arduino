@@ -21,8 +21,8 @@
 //------------------------------------------------------------------------
 //Sensor values
 int rawSoilHumidity0 = 0;
-float rawAirHumidity0 = 0;
-float rawAirTemp0 = 0;
+float AirHumidity0 = 0; //in %
+float AirTemp0 = 0; //in °C
 long watering0ElapsedTime = 0; //seconds
 long watering0ElapsedTimeInterval = 0; //seconds
 
@@ -35,9 +35,8 @@ int pumpState = HIGH;
 // milliseconds, will quickly become a bigger number than can be stored in an int.
 unsigned long lastDebounceTime = 0;  // the last time the output pin was toggled
 unsigned long debounceDelay = 50;    // the debounce time; increase if the output flickers
-long lastTimeCheckedStatusLed;
-long lastTimeCheckedClock;
-long lastTimeCheckedLogger;
+long lastTimeChecked1Sec;
+long lastTimeChecked10Min;
 
 int seconds = 0;
 int minutes = 0;
@@ -51,9 +50,8 @@ DHT dht(DHTPIN, DHTTYPE);
 //------------------------------------------------------------------------
 void setup () {
 
-  lastTimeCheckedStatusLed = lmillis() + COUNTER_1SEC;
-  lastTimeCheckedClock = lmillis() + COUNTER_1SEC;
-  lastTimeCheckedLogger = lmillis() + COUNTER_10MIN;
+  lastTimeChecked1Sec = lmillis() + COUNTER_1SEC;
+  lastTimeChecked10Min = lmillis() + COUNTER_10MIN;
 
   //Set initial I/O state
   pinMode(PUMP_0, OUTPUT);
@@ -133,30 +131,26 @@ void CheckWaterButtonPressed() {
 
 
 void UpdateClock() {
-  if (lmillis() - lastTimeCheckedClock >= 0) {
+  seconds++;
 
-    lastTimeCheckedClock = lmillis() + COUNTER_1SEC;
-    seconds++;
-
-    if (seconds == 60) {
-      seconds = 0;
-      minutes++;
-    }
-    if (minutes == 60) {
-      minutes = 0;
-      hours++;
-    }
-    if (hours == 24) {
-      hours = 0;
-      days++;
-    }
+  if (seconds == 60) {
+    seconds = 0;
+    minutes++;
+  }
+  if (minutes == 60) {
+    minutes = 0;
+    hours++;
+  }
+  if (hours == 24) {
+    hours = 0;
+    days++;
   }
 }
 
 
 void Timer_1Sec () {
-  if (lmillis() - lastTimeCheckedStatusLed >= 0) {
-    lastTimeCheckedStatusLed = lmillis() + COUNTER_1SEC;
+  if (lmillis() - lastTimeChecked1Sec >= 0) {
+    lastTimeChecked1Sec = lmillis() + COUNTER_1SEC;
     digitalWrite(STATUS_LED, !digitalRead(STATUS_LED));
     UpdateClock();
   }
@@ -164,13 +158,13 @@ void Timer_1Sec () {
 
 
 void Timer_10Min() {
-  if (lmillis() - lastTimeCheckedLogger >= 0) {
-    lastTimeCheckedLogger = lmillis() + COUNTER_10MIN;
+  if (lmillis() - lastTimeChecked10Min >= 0) {
+    lastTimeChecked10Min = lmillis() + COUNTER_10MIN;
 
     //Collect sensor information
     rawSoilHumidity0 = analogRead(HUMIDITY_SENSOR_0);
-    rawAirHumidity0 = dht.readHumidity();
-    rawAirTemp0 = dht.readTemperature();
+    AirHumidity0 = dht.readHumidity();
+    AirTemp0 = dht.readTemperature();
 
     if (waterButtonState == LOW) {
       LogData();
@@ -187,9 +181,9 @@ void LogData() {
   Serial.print(",");
   Serial.print(String(rawSoilHumidity0));
   Serial.print(",");
-  Serial.print(String(rawAirHumidity0));
+  Serial.print(String(AirHumidity0));
   Serial.print(",");
-  Serial.print(String(rawAirTemp0));
+  Serial.print(String(AirTemp0));
   Serial.print(",");
   Serial.println(String(watering0ElapsedTime / 1000));
   watering0ElapsedTime = 0;
