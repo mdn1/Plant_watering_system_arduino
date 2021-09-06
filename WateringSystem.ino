@@ -1,5 +1,5 @@
 //Defines
-#define LOGGING_INTERVAL 600000 //10min
+#define LOGGING_INTERVAL 5000 //10min
 #define LED_BLINK_INTERVAL 1000
 #define CLOCK_COUNT_INTERVAL 1000
 #define lmillis() ((long)millis())
@@ -14,7 +14,7 @@ const int statusLed = 13;
 int rawSoilHumidity0 = 0;
 int rawAirHumidity0 = 0;
 int rawAirTemp0 = 0;
-int watering0ElapsedTime = 0; //seconds
+long watering0ElapsedTime = 0; //seconds
 
 //Variables
 int waterButtonState = LOW;
@@ -99,7 +99,15 @@ void CheckWaterButtonPressed(){
     if (reading != waterButtonState) {
       waterButtonState = reading;
 
-      pumpState = !pumpState;  
+      pumpState = !pumpState;
+
+      if(waterButtonState == HIGH){
+        watering0ElapsedTime = lmillis();
+      } 
+      else {
+        watering0ElapsedTime = lmillis() - watering0ElapsedTime;
+        LogData();
+      }
     }
   }
 
@@ -142,8 +150,16 @@ void UpdateClock(){
   }   
 }
 
+void CheckTimerLogData(){
+  if (lmillis() - lastTimeCheckedLogger >= 0) {
+
+    lastTimeCheckedLogger = lmillis() + LOGGING_INTERVAL;
+    LogData();
+  }
+}
 
 void LogData(){
+
   Serial.print(String(days) + "D");
   Serial.print(String(hours) + ":");
   Serial.print(String(minutes) + ":");
@@ -155,7 +171,7 @@ void LogData(){
   Serial.print(",");
   Serial.print(String(rawAirTemp0));
   Serial.print(",");
-  Serial.print(String(watering0ElapsedTime));    
-  Serial.print(",");
+  Serial.println(String(watering0ElapsedTime));
+
 }
 
