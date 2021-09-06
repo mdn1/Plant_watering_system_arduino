@@ -12,7 +12,7 @@
 #define WATER_BUTTON 3
 #define STATUS_LED 13
 #define COUNTER_1SEC 1000
-#define COUNTER_10MIN 10000 //10min
+#define COUNTER_10MIN 600000 //10min
 #define lmillis() ((long)millis())
 
 
